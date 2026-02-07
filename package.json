@@ -1,14 +1,100 @@
 {
   "name": "mct-ab-testing",
   "version": "1.0.0",
-  "description": "MCT module for AB-TESTING",
-  "main": "dist/index.js",
+  "description": "MCT AB Testing Module",
+  "main": "src/index.ts",
   "scripts": {
+    "start": "ts-node src/index.ts",
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
-    "test": "jest",
-    "setup": "npm install && npx drizzle-kit push:pg"
+    "test": "jest"
   },
-  "keywords": ["mct", "api", "microservice"],
-  "license": "MIT"
+  "dependencies": {
+    "express": "^4.17.1",
+    "typeorm": "^0.2.34",
+    "reflect-metadata": "^0.1.13",
+    "sqlite3": "^5.0.2",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.37",
+    "@types/express": "^4.17.11",
+    "jest": "^26.6.3",
+    "ts-jest": "^26.5.4"
+  },
+  "type": "module"
+}
+### **`src/index.ts`**
+import express from 'express';
+import { Server as MCTServer } from './mct/server';
+import routes from './api/routes';
+const app = express();
+const port = process.env.PORT || 3000;
+app.use(express.json());
+app.use(routes);
+const mctServer = new MCTServer();
+mctServer.start();
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
+### **`src/api/routes.ts`**
+import { Router } from 'express';
+import { getTestResults, createTest, updateTest } from '../services/testService';
+const router = Router();
+router.get('/tests/results', getTestResults);
+router.post('/tests/create', createTest);
+router.put('/tests/update/:id', updateTest);
+export default router;
+### **`src/db/schema.ts`**
+import { Entity, PrimaryGeneratedColumn, Column, createConnection } from 'typeorm';
+@Entity()
+export class Test {
+  @PrimaryGeneratedColumn()
+  id: number;
+  @Column()
+  name: string;
+  @Column()
+  variantA: string;
+  @Column()
+  variantB: string;
+  @Column({ default: 0 })
+  variantAResult: number;
+  @Column({ default: 0 })
+  variantBResult: number;
+}
+export async function initializeDatabase() {
+  await createConnection({
+    type: 'sqlite',
+    database: 'db.sqlite',
+    entities: [Test],
+    synchronize: true,
+  });
+}
+### **`src/mct/server.ts`**
+export class Server {
+  start() {
+    console.log('MCT Server started');
+  }
+}
+### **`src/mct/tools.ts`**
+export class Tools {
+  static evaluateTest(testId: number) {
+    console.log(`Evaluating test with ID ${testId}`);
+  }
+}
+### **`src/services/testService.ts`**
+import { Request, Response } from 'express';
+import { Test, initializeDatabase } from '../db/schema';
+initializeDatabase();
+export async function getTestResults(req: Request, res: Response) {
+  // Implementation to fetch test results
+  res.status(200).json({ message: "Results fetched successfully" });
+}
+export async function createTest(req: Request, res: Response) {
+  // Implementation to create a new test
+  res.status(201).json({ message: "Test created successfully" });
+}
+export async function updateTest(req: Request, res: Response) {
+  // Implementation to update a test
+  res.status(200).json({ message: "Test updated successfully" });
 }
